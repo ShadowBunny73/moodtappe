@@ -389,14 +389,14 @@ async function generateMixtape(){
     if(recCount>0){
       // Search Spotify playlists by mood keyword, grab tracks from top results
       const moodKeywords={
-        euphoric:"euphoric feel good",
-        melancholic:"melancholic sad",
-        focus:"focus deep work",
-        chill:"chill vibes",
-        hype:"hype energy",
-        romantic:"romantic love",
-        nostalgic:"nostalgic throwback",
-        dark:"dark moody"
+        euphoric:"euphoric",
+        melancholic:"melancholic",
+        focus:"focus",
+        chill:"chill",
+        hype:"hype",
+        romantic:"romantic",
+        nostalgic:"nostalgic",
+        dark:"darkwave"
       };
       const keyword=moodKeywords[selectedMood];
       const seen=new Set(likedSongs.map(s=>s.id));
