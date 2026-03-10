@@ -387,29 +387,45 @@ async function generateMixtape(){
     const recCount=mixtapeLength-likedCount;
     let recTracks=[];
     if(recCount>0){
-      const moodQueries={
-        euphoric:["genre:dance","genre:pop","genre:electronic"],
-        melancholic:["genre:indie","genre:folk","genre:singer-songwriter"],
-        focus:["genre:ambient","genre:classical","genre:piano"],
-        chill:["genre:chill","genre:acoustic","genre:indie-pop"],
-        hype:["genre:hip-hop","genre:rap","genre:dance"],
-        romantic:["genre:soul","genre:r-n-b","genre:pop"],
-        nostalgic:["genre:rock","genre:pop","genre:indie"],
-        dark:["genre:alternative","genre:metal","genre:goth"]
+      // Search Spotify playlists by mood keyword, grab tracks from top results
+      const moodKeywords={
+        euphoric:"euphoric feel good",
+        melancholic:"melancholic sad",
+        focus:"focus deep work",
+        chill:"chill vibes",
+        hype:"hype energy",
+        romantic:"romantic love",
+        nostalgic:"nostalgic throwback",
+        dark:"dark moody"
       };
-      const queries=moodQueries[selectedMood];
+      const keyword=moodKeywords[selectedMood];
       const seen=new Set(likedSongs.map(s=>s.id));
-      for(const q of queries){
+
+      // Step 1: search for playlists matching the mood
+      const plData=await api("/search?q="+keyword.replace(/ /g,"+")+"&type=playlist&limit=8");
+      const playlists=(plData?.playlists?.items||[]).filter(p=>p&&p.id);
+
+      // Step 2: pull tracks from each playlist until we have enough
+      for(const pl of playlists){
         if(recTracks.length>=recCount)break;
         const needed=recCount-recTracks.length;
-        const url="/search?q="+q.replace(/ /g,"+")+"&type=track&limit=20";
-        console.log("Searching:",url);
-        const data=await api(url);
-        console.log("Result:",JSON.stringify(data).slice(0,200));
-        const items=(data?.tracks?.items||[]).filter(t=>t&&t.id&&!seen.has(t.id));
+        const plTracks=await api("/playlists/"+pl.id+"/tracks?limit=50");
+        const items=(plTracks?.items||[])
+          .map(i=>i?.track)
+          .filter(t=>t&&t.id&&t.uri&&t.uri.startsWith('spotify:track')&&!seen.has(t.id));
+        // shuffle so we get variety not just top tracks
+        items.sort(()=>Math.random()-0.5);
         items.slice(0,needed).forEach(t=>{
           seen.add(t.id);
-          recTracks.push({name:t.name,artist:t.artists.map(a=>a.name).join(", "),duration:ms2t(t.duration_ms),art:t.album.images?.[1]?.url||"",uri:t.uri,id:t.id,fromLiked:false});
+          recTracks.push({
+            name:t.name,
+            artist:t.artists.map(a=>a.name).join(", "),
+            duration:ms2t(t.duration_ms),
+            art:t.album.images?.[1]?.url||"",
+            uri:t.uri,
+            id:t.id,
+            fromLiked:false
+          });
         });
       }
     }
