@@ -379,24 +379,37 @@ function selectLength(el,n){document.querySelectorAll('.length-opt').forEach(o=>
 // ── GENERATE ─────────────────────────────────────────
 async function generateMixtape(){
   if(!selectedMood)return;
-  const btn=document.getElementById('gen-btn'),sp=document.getElementById('spinner');
-  btn.disabled=true; sp.style.display='block';
-  document.getElementById('gen-label').textContent='BUILDING YOUR MIX…';
+  const btn=document.getElementById("gen-btn"),sp=document.getElementById("spinner");
+  btn.disabled=true; sp.style.display="block";
+  document.getElementById("gen-label").textContent="BUILDING YOUR MIX...";
   try{
     const likedCount=Math.min(Math.round((blendPct/100)*mixtapeLength),likedSongs.filter((_,i)=>!excludedLiked.has(i)).length);
     const recCount=mixtapeLength-likedCount;
-    const p=MOOD[selectedMood];
-    const energy=document.getElementById('energy').value/10;
-    const dance=document.getElementById('dance').value/10;
-    const valence=document.getElementById('valence').value/10;
-    const acoustic=document.getElementById('acoustic').value/10;
-    const pillMap={'pop':'pop','hip-hop':'hip-hop','r&b':'r-n-b','electronic':'electronic','indie':'indie','alternative':'alternative','jazz':'jazz','lo-fi':'chill','rock':'rock','classical':'classical','soul':'soul','ambient':'ambient'}; const pills=[...document.querySelectorAll('.pill.active')].map(el=>pillMap[el.textContent.trim().toLowerCase()]||'pop').filter(Boolean);
-    const genres=[...new Set([...p.g,...pills])].slice(0,5);
     let recTracks=[];
     if(recCount>0){
-      const params=new URLSearchParams({seed_genres:genres.join(','),limit:Math.min(recCount+5,100),target_energy:energy,target_danceability:dance,target_valence:valence,target_acousticness:acoustic,min_popularity:document.getElementById('discovery').value*5});
-      const rd=await api('/recommendations?'+params);
-      recTracks=(rd?.tracks||[]).slice(0,recCount).map(t=>({name:t.name,artist:t.artists.map(a=>a.name).join(', '),duration:ms2t(t.duration_ms),art:t.album.images?.[1]?.url||'',uri:t.uri,id:t.id,fromLiked:false}));
+      const moodQueries={
+        euphoric:["happy upbeat dance","feel good pop energy","euphoric electronic"],
+        melancholic:["sad emotional indie","melancholy acoustic","heartbreak slow"],
+        focus:["ambient instrumental focus","classical piano study","lo-fi concentration"],
+        chill:["chill relaxing vibes","mellow indie chill","easy breezy acoustic"],
+        hype:["hype workout rap","high energy hip hop","pump up anthem"],
+        romantic:["romantic love ballad","soft romantic soul","intimate love songs"],
+        nostalgic:["80s classic hits","nostalgic throwback pop","retro feel good"],
+        dark:["dark moody alternative","gloomy atmospheric","intense dark rock"]
+      };
+      const queries=moodQueries[selectedMood];
+      const seen=new Set(likedSongs.map(s=>s.id));
+      for(const q of queries){
+        if(recTracks.length>=recCount)break;
+        const needed=recCount-recTracks.length;
+        const params=new URLSearchParams({q,type:"track",limit:Math.min(needed+10,50)});
+        const data=await api("/search?"+params);
+        const items=(data?.tracks?.items||[]).filter(t=>t&&t.id&&!seen.has(t.id)&&t.preview_url!==undefined);
+        items.slice(0,needed).forEach(t=>{
+          seen.add(t.id);
+          recTracks.push({name:t.name,artist:t.artists.map(a=>a.name).join(", "),duration:ms2t(t.duration_ms),art:t.album.images?.[1]?.url||"",uri:t.uri,id:t.id,fromLiked:false});
+        });
+      }
     }
     const avail=likedSongs.filter((_,i)=>!excludedLiked.has(i)).sort(()=>Math.random()-0.5).slice(0,likedCount);
     let tracks=[],ri=0,li=0;
@@ -405,10 +418,11 @@ async function generateMixtape(){
       if(li<avail.length)tracks.push(avail[li++]);
     }
     tracks=tracks.slice(0,mixtapeLength);
-    renderPlaylist(tracks);
-  }catch(e){showToast('Error: '+e.message);}
-  sp.style.display='none'; btn.disabled=false;
-  document.getElementById('gen-label').textContent=`REBUILD ${selectedMood.toUpperCase()} MIXTAPE`;
+    if(!tracks.length){showToast("No tracks found — try a different mood or genre");}
+    else{renderPlaylist(tracks);}
+  }catch(e){showToast("Error: "+e.message);}
+  sp.style.display="none"; btn.disabled=false;
+  document.getElementById("gen-label").textContent="REBUILD "+selectedMood.toUpperCase()+" MIXTAPE";
 }
 
 function renderPlaylist(tracks){
