@@ -388,14 +388,14 @@ async function generateMixtape(){
     let recTracks=[];
     if(recCount>0){
       const moodQueries={
-        euphoric:["happy upbeat dance","feel good pop energy","euphoric electronic"],
-        melancholic:["sad emotional indie","melancholy acoustic","heartbreak slow"],
-        focus:["ambient instrumental focus","classical piano study","lo-fi concentration"],
-        chill:["chill relaxing vibes","mellow indie chill","easy breezy acoustic"],
-        hype:["hype workout rap","high energy hip hop","pump up anthem"],
-        romantic:["romantic love ballad","soft romantic soul","intimate love songs"],
-        nostalgic:["80s classic hits","nostalgic throwback pop","retro feel good"],
-        dark:["dark moody alternative","gloomy atmospheric","intense dark rock"]
+        euphoric:["genre:dance","genre:pop","genre:electronic"],
+        melancholic:["genre:indie","genre:folk","genre:singer-songwriter"],
+        focus:["genre:ambient","genre:classical","genre:piano"],
+        chill:["genre:chill","genre:acoustic","genre:indie-pop"],
+        hype:["genre:hip-hop","genre:rap","genre:dance"],
+        romantic:["genre:soul","genre:r-n-b","genre:pop"],
+        nostalgic:["genre:rock","genre:pop","genre:indie"],
+        dark:["genre:alternative","genre:metal","genre:goth"]
       };
       const queries=moodQueries[selectedMood];
       const seen=new Set(likedSongs.map(s=>s.id));
@@ -446,17 +446,22 @@ function renderPlaylist(tracks){
   document.getElementById('playlist-section').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+// ── WEB PLAYBACK SDK GLOBAL CALLBACK ────────────────
+window.onSpotifyWebPlaybackSDKReady = function(){
+  if(window._spotifySDKReady) window._spotifySDKReady();
+};
+
 // ── INIT PLAYER ─────────────────────────────────────
 function initPlayer(){
-  window.onSpotifyWebPlaybackSDKReady=()=>{
+  function setup(){
     spotifyPlayer=new Spotify.Player({name:'Moodtape',getOAuthToken:cb=>cb(accessToken),volume:0.8});
     spotifyPlayer.addListener('ready',({device_id})=>{deviceId=device_id;console.log('Player ready',device_id);});
     spotifyPlayer.addListener('not_ready',()=>{deviceId=null;});
     spotifyPlayer.addListener('player_state_changed',state=>{if(!state)return;onStateChange(state);});
     spotifyPlayer.addListener('authentication_error',()=>{document.getElementById('np-note').textContent='Spotify Premium required for in-browser playback';});
     spotifyPlayer.connect();
-  };
-  if(window.Spotify){window.onSpotifyWebPlaybackSDKReady();}
+  }
+  if(window.Spotify){ setup(); } else { window._spotifySDKReady=setup; }
 }
 
 // ── WEB PLAYBACK SDK ─────────────────────────────────
