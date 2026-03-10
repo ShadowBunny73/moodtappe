@@ -305,11 +305,7 @@ async function handleCallback(code){
 }
 
 // ── SPOTIFY API ──────────────────────────────────────
-async function api(path,opts={}){
-  const r=await fetch('https://api.spotify.com/v1'+path,{...opts,headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json',...(opts.headers||{})}});
-  if(r.status===204)return null;
-  return r.json();
-}
+async function api(path,opts={}){ const r=await fetch("https://api.spotify.com/v1"+path,{...opts,headers:{"Authorization":"Bearer "+accessToken,"Content-Type":"application/json",...(opts.headers||{})}}); if(r.status===204)return null; const text=await r.text(); if(!text||!text.trim())return null; const json=JSON.parse(text); if(json.error){throw new Error(json.error.message+" ("+json.error.status+")");} return json;}
 
 // ── INIT ─────────────────────────────────────────────
 async function initApp(){
@@ -356,14 +352,14 @@ function updateBlend(){blendPct=parseInt(document.getElementById('blend-slider')
 
 // ── MOOD ─────────────────────────────────────────────
 const MOOD={
-  euphoric:  {e:0.9,d:0.8,v:0.9,a:0.1,g:['pop','dance','happy']},
-  melancholic:{e:0.3,d:0.2,v:0.2,a:0.7,g:['sad','indie','singer-songwriter']},
-  focus:     {e:0.4,d:0.3,v:0.5,a:0.5,g:['ambient','classical','study']},
-  chill:     {e:0.4,d:0.5,v:0.7,a:0.6,g:['chill','lo-fi','acoustic']},
-  hype:      {e:1.0,d:0.9,v:0.8,a:0.05,g:['hip-hop','work-out','power-pop']},
-  romantic:  {e:0.3,d:0.4,v:0.6,a:0.7,g:['romance','soul','r-n-b']},
-  nostalgic: {e:0.6,d:0.6,v:0.7,a:0.4,g:['80s','classic-rock','pop']},
-  dark:      {e:0.5,d:0.2,v:0.1,a:0.4,g:['goth','alternative','emo']},
+  euphoric:  {e:0.9,d:0.8,v:0.9,a:0.1,g:['pop','dance','electronic']},
+  melancholic:{e:0.3,d:0.2,v:0.2,a:0.7,g:['indie','folk','singer-songwriter']},
+  focus:     {e:0.4,d:0.3,v:0.5,a:0.5,g:['ambient','classical','piano']},
+  chill:     {e:0.4,d:0.5,v:0.7,a:0.6,g:['chill','acoustic','indie-pop']},
+  hype:      {e:1.0,d:0.9,v:0.8,a:0.05,g:['hip-hop','pop','dance']},
+  romantic:  {e:0.3,d:0.4,v:0.6,a:0.7,g:['soul','r-n-b','pop']},
+  nostalgic: {e:0.6,d:0.6,v:0.7,a:0.4,g:['rock','pop','indie']},
+  dark:      {e:0.5,d:0.2,v:0.1,a:0.4,g:['alternative','metal','goth']},
 };
 const LABELS={euphoric:'EUPHORIC MIX 🔥',melancholic:'MELANCHOLIC MIX 🌧',focus:'FOCUS ZONE 🧠',chill:'CHILL VIBES 🌊',hype:'HYPE SESSION ⚡',romantic:'LOVE MIXTAPE 🕯',nostalgic:'NOSTALGIA TRIP 📼',dark:'DARK HOURS 🖤'};
 
@@ -394,7 +390,7 @@ async function generateMixtape(){
     const dance=document.getElementById('dance').value/10;
     const valence=document.getElementById('valence').value/10;
     const acoustic=document.getElementById('acoustic').value/10;
-    const pills=[...document.querySelectorAll('.pill.active')].map(el=>el.textContent.trim().toLowerCase().replace(/\s+/g,'-').replace('&',''));
+    const pillMap={'pop':'pop','hip-hop':'hip-hop','r&b':'r-n-b','electronic':'electronic','indie':'indie','alternative':'alternative','jazz':'jazz','lo-fi':'chill','rock':'rock','classical':'classical','soul':'soul','ambient':'ambient'}; const pills=[...document.querySelectorAll('.pill.active')].map(el=>pillMap[el.textContent.trim().toLowerCase()]||'pop').filter(Boolean);
     const genres=[...new Set([...p.g,...pills])].slice(0,5);
     let recTracks=[];
     if(recCount>0){
