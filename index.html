@@ -402,14 +402,16 @@ async function generateMixtape(){
       const seen=new Set(likedSongs.map(s=>s.id));
 
       // Step 1: search for playlists matching the mood
-      const plData=await api("/search?q="+keyword.replace(/ /g,"+")+"&type=playlist&limit=8");
+      const plData=await api("/search?q="+keyword.replace(/ /g,"+")+"&type=playlist&limit=15");
       const playlists=(plData?.playlists?.items||[]).filter(p=>p&&p.id);
 
       // Step 2: pull tracks from each playlist until we have enough
       for(const pl of playlists){
         if(recTracks.length>=recCount)break;
         const needed=recCount-recTracks.length;
-        const plTracks=await api("/playlists/"+pl.id+"/tracks?limit=50");
+        let plTracks=null;
+        try{ plTracks=await api("/playlists/"+pl.id+"/tracks?limit=50"); }catch(e){ continue; }
+        if(!plTracks)continue;
         const items=(plTracks?.items||[])
           .map(i=>i?.track)
           .filter(t=>t&&t.id&&t.uri&&t.uri.startsWith('spotify:track')&&!seen.has(t.id));
