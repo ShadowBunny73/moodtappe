@@ -402,7 +402,7 @@ async function generateMixtape(){
       for(const q of queries){
         if(recTracks.length>=recCount)break;
         const needed=recCount-recTracks.length;
-        const url="/search?q="+encodeURIComponent(q)+"&type=track&limit=20";
+        const url="/search?q="+q.replace(/ /g,"+")+"&type=track&limit=20";
         console.log("Searching:",url);
         const data=await api(url);
         console.log("Result:",JSON.stringify(data).slice(0,200));
@@ -446,18 +446,21 @@ function renderPlaylist(tracks){
   document.getElementById('playlist-section').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// ── WEB PLAYBACK SDK ─────────────────────────────────
-window.onSpotifyWebPlaybackSDKReady=()=>{
-  const tryInit=setInterval(()=>{
-    if(!accessToken)return; clearInterval(tryInit);
+// ── INIT PLAYER ─────────────────────────────────────
+function initPlayer(){
+  window.onSpotifyWebPlaybackSDKReady=()=>{
     spotifyPlayer=new Spotify.Player({name:'Moodtape',getOAuthToken:cb=>cb(accessToken),volume:0.8});
-    spotifyPlayer.addListener('ready',({device_id})=>{deviceId=device_id;document.getElementById('np-note').textContent='';});
+    spotifyPlayer.addListener('ready',({device_id})=>{deviceId=device_id;console.log('Player ready',device_id);});
     spotifyPlayer.addListener('not_ready',()=>{deviceId=null;});
     spotifyPlayer.addListener('player_state_changed',state=>{if(!state)return;onStateChange(state);});
-    spotifyPlayer.addListener('authentication_error',()=>{document.getElementById('np-note').textContent='⚠ Spotify Premium required for in-browser playback';});
+    spotifyPlayer.addListener('authentication_error',()=>{document.getElementById('np-note').textContent='Spotify Premium required for in-browser playback';});
     spotifyPlayer.connect();
-  },500);
-};
+  };
+  if(window.Spotify){window.onSpotifyWebPlaybackSDKReady();}
+}
+
+// ── WEB PLAYBACK SDK ─────────────────────────────────
+// (player init moved to initPlayer())
 
 function onStateChange(state){
   const t=state.track_window.current_track;
