@@ -402,9 +402,9 @@ async function generateMixtape(){
       for(const q of queries){
         if(recTracks.length>=recCount)break;
         const needed=recCount-recTracks.length;
-        const params=new URLSearchParams({q,type:"track",limit:Math.min(needed+10,50)});
+        const params=new URLSearchParams({q,type:"track",limit:50});
         const data=await api("/search?"+params);
-        const items=(data?.tracks?.items||[]).filter(t=>t&&t.id&&!seen.has(t.id)&&t.preview_url!==undefined);
+        const items=(data?.tracks?.items||[]).filter(t=>t&&t.id&&!seen.has(t.id));
         items.slice(0,needed).forEach(t=>{
           seen.add(t.id);
           recTracks.push({name:t.name,artist:t.artists.map(a=>a.name).join(", "),duration:ms2t(t.duration_ms),art:t.album.images?.[1]?.url||"",uri:t.uri,id:t.id,fromLiked:false});
